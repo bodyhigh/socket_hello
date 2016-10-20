@@ -1,27 +1,23 @@
 'use strict';
 
+var http = require('http');
 var express = require('express');
+var socketio = require('socket.io');
+
 var app = express();
-var server = require('http').Server(app);
-var io = require('socket.io')(server);
+var server = http.createServer(app);
+var io = socketio(server);
 
-app.get('/', function(req, res) {
-    res.sendFile(__dirname + '/public/index.html');
-});
+app.use('/rooms', require('./routes/rooms'));
+app.use(express.static(__dirname + '/public'));
 
-io.on('connection', function(socket) {
-    console.log('A user is connected');
-    socket.broadcast.emit('hi');
-
-    socket.on('disconnect', function() {
-        console.log('user disconnected');
-    });
-
-    socket.on('chat message', function(msg) {
-        io.emit('chat message', msg);
-    });
-});
+io.on('connection', onConnection);
 
 server.listen(3000, function() {
     console.log('Listening on port 3000');
 });
+
+function onConnection (socket) {
+    socket.emit('chat message', 'Welcome to the chat!');
+    socket.on('chat message', (txt) => io.emit('chat message', txt));
+}
